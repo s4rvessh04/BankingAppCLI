@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"time"
 )
@@ -13,7 +12,7 @@ func login() bool {
 	fmt.Println("_< Welcome to banking portal terminal app >_")
 	fmt.Println("0: Login\n1: Create Account")
 
-	fmt.Print("Enter choice: ")
+	fmt.Print(">> ")
 	fmt.Scanln(&choice)
 
 	if choice == 0 {
@@ -24,27 +23,27 @@ func login() bool {
 		fmt.Scanln(&password)
 
 		if ValidateUser(email, password) {
-			fmt.Println("Account verified!")
-			fmt.Println("Redirecting to your profile...")
+			fmt.Println("- Account verified!")
+			fmt.Print("- Redirecting to your profile...\n\n")
 			userPage(email)
 		} else {
-			fmt.Println("Account does not exist!")
+			fmt.Print("! > Account does not exist!\n\n")
 			login()
 		}
 	} else if choice == 1 {
 		register()
 	} else {
-		fmt.Println("Invalid option!")
+		fmt.Println("! > Invalid option!")
 		login()
 		return false
 	}
 	return true
 }
 
-func register() error {
+func register() {
 	var name, email, password, passwordAgain string
 
-	fmt.Println("Register a new user.")
+	fmt.Println("~ Register a new user ~")
 
 	fmt.Print("Enter Name: ")
 	fmt.Scanln(&name)
@@ -55,7 +54,8 @@ func register() error {
 	// Validating if the email already exists in the database
 	for _, user := range Users {
 		if user.Email == email {
-			return errors.New("account with the email exists")
+			fmt.Println("! > Email already exists")
+			register()
 		}
 	}
 
@@ -67,8 +67,8 @@ func register() error {
 
 	// A while loop if passwords(password and passwordAgain) did not match
 	for password != passwordAgain {
-		fmt.Println("Passwords failed to match.")
-		fmt.Println("Enter Password Again: ")
+		fmt.Println("! > Passwords failed to match.")
+		fmt.Println(">> Enter Password Again: ")
 		fmt.Scanln(&passwordAgain)
 	}
 
@@ -82,21 +82,20 @@ func register() error {
 	Users = append(Users, person.User)
 	BankDetails = append(BankDetails, bankDetail)
 
-	fmt.Printf("Account created for %v \n", name)
-	fmt.Println("Redirecting to login...")
+	fmt.Printf("- Account created for %v \n", name)
+	fmt.Print("- Redirecting to login...\n\n")
 
 	time.Sleep(1 * time.Second)
 
 	login()
-
-	return nil
 }
 
 func userPage(email string) {
-	fmt.Printf("Welcome %v\n", email)
+	fmt.Printf("~ Welcome %v ~\n", email)
 	fmt.Println("0: Check balance\n1: Withdraw money\n2: Deposit amount\n3: Transfer amount\n4: Logout")
 
 	var choice int
+	fmt.Print(">> ")
 	fmt.Scanln(&choice)
 
 	var currentPerson Person
@@ -109,8 +108,12 @@ func userPage(email string) {
 
 	switch choice {
 	case 0:
+		/**
+		Logic for checking user's bank balance
+		- Fetches bank details with helper method GetData
+		**/
 		bankDetails, _, _, _ := GetData(currentPerson, "bankDetails")
-		fmt.Printf("Current bank balance: %v\n", bankDetails.CurrentBalance)
+		fmt.Printf("$ > Current bank balance: %v\n\n", bankDetails.CurrentBalance)
 		userPage(email)
 	case 1:
 		/**
@@ -119,7 +122,7 @@ func userPage(email string) {
 		- if current balance is 0 prompt to increase the balance first
 		**/
 		var amount, previousBalance, currentBalance float64
-		fmt.Println("Enter amount to withdraw: ")
+		fmt.Print(">> Enter amount to withdraw: ")
 		fmt.Scanln(&amount)
 
 		for i := range BankDetails {
@@ -130,15 +133,15 @@ func userPage(email string) {
 					currentIter.CurrentBalance -= amount
 					currentBalance = currentIter.CurrentBalance
 				} else {
-					fmt.Println("Amount can't be <= 0 !")
+					fmt.Println("! > Amount can't be <= 0")
 					userPage(email)
 				}
 			} else if currentIter.AccountHash == currentPerson.AccountHash && currentIter.CurrentBalance <= 0 {
-				fmt.Printf("Your balance seems to be low by: %v", previousBalance-amount)
+				fmt.Printf("! > Your balance seems to be low by: %v\n", previousBalance-amount)
 				userPage(email)
 			}
 		}
-		fmt.Printf("Previous Balance: %v\nWithdrawn amount: %v\nCurrent Balance: %v\n", previousBalance, amount, currentBalance)
+		fmt.Printf("$ > Previous Balance: %v\n$ > Withdrawn amount: %v\n$ > Current Balance: %v\n\n", previousBalance, amount, currentBalance)
 		userPage(email)
 	case 2:
 		/**
@@ -146,21 +149,9 @@ func userPage(email string) {
 		- Add the amount to current balance
 		**/
 		var amount, previousBalance, currentBalance float64
-		fmt.Println("Enter amount to deposit: ")
+		fmt.Print(">> Enter amount to deposit: ")
 		fmt.Scanln(&amount)
 
-		// if len(BankDetails) == 0 {
-		// 	BankDetails = append(BankDetails, BankDetail{AccountHash: currentPerson.AccountHash, CurrentBalance: amount})
-		// 	if amount > 0 {
-		// 		previousBalance = 0
-		// 		currentBalance = amount
-		// 		fmt.Printf("Previous Balance: %v\nDeposited amount: %v\nCurrent Balance: %v\n", previousBalance, amount, currentBalance)
-		// 		userPage(email)
-		// 	} else {
-		// 		fmt.Println("Amount can't be <= 0 !")
-		// 		userPage(email)
-		// 	}
-		// } else {
 		for i := range BankDetails {
 			currentIter := &BankDetails[i]
 			if currentIter.AccountHash == currentPerson.AccountHash && currentIter.CurrentBalance >= 0 {
@@ -168,16 +159,15 @@ func userPage(email string) {
 					previousBalance = currentIter.CurrentBalance
 					currentIter.CurrentBalance += amount
 					currentBalance = currentIter.CurrentBalance
-					fmt.Printf("Previous Balance: %v\nDeposited amount: %v\nCurrent Balance: %v\n", previousBalance, amount, currentBalance)
+					fmt.Printf("$ > Previous Balance: %v\n$ > Deposit amount: %v\n$ > Current Balance: %v\n\n", previousBalance, amount, currentBalance)
 					userPage(email)
 				} else {
-					fmt.Println("Amount can't be <= 0 !")
+					fmt.Println("! > Amount can't be <= 0 !")
 					userPage(email)
 				}
 			}
 		}
 		BankDetails = append(BankDetails, BankDetail{AccountHash: currentPerson.AccountHash, CurrentBalance: amount})
-		// }
 	case 3:
 		/**
 		Logic for transferring money
@@ -188,8 +178,15 @@ func userPage(email string) {
 		var amount float64
 		var recieverEmail string
 
-		fmt.Println("Enter the reciever's email and amount: ")
+		fmt.Print(">> Enter the reciever's email and amount: ")
 		fmt.Scanln(&recieverEmail, &amount)
+
+		// A while loop which validates if the amount or the reciever email entered is non empty
+		for amount <= 0 || recieverEmail == "" {
+			fmt.Println("! > Amount can't be 0 and reciever email can't be empty")
+			fmt.Print(">> Enter the reciever's email and amount: ")
+			fmt.Scanln(&recieverEmail, &amount)
+		}
 
 		for i := range Persons {
 			if Persons[i].User.Email == recieverEmail {
@@ -198,26 +195,22 @@ func userPage(email string) {
 					currentIter := &BankDetails[i]
 					if currentIter.AccountHash == reciever.AccountHash {
 						currentIter.CurrentBalance += amount
-						fmt.Println(currentIter)
 					} else if currentIter.AccountHash == currentPerson.AccountHash {
 						currentIter.CurrentBalance -= amount
-						fmt.Println(currentIter)
 					}
 				}
 				TransferTransactions = append(TransferTransactions, TransferTransaction{Amount: amount, From: currentPerson.AccountHash, To: reciever.AccountHash})
-				fmt.Println(TransferTransactions)
-				fmt.Printf("Amount send: %v\nTo: %v\n", amount, reciever.AccountHash)
+				fmt.Printf("$ > Amount send: %v\n$ > To: %v\n\n", amount, reciever.AccountHash)
 			}
 		}
 
 		userPage(email)
 	case 4:
-		fmt.Println("Logging out...")
+		fmt.Print("# > Logging out...\n\n")
 		login()
 	}
 }
 
 func main() {
-	// var user = Person{Name: "sarvesh", AccountHash: "1234", User: User{Email: "Sarvesh", Password: "Password"}}
 	login()
 }
